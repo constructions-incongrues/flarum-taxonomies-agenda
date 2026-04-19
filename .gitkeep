@@ -1,0 +1,3 @@
+Ce dossier accueillera le code de l'extension Flarum (composer.json, extend.php, src/, js/, etc.).
+Il est monté dans le container à /srv/extensions/mi-agenda-timeline.
+Pour l'instant, vide — l'arborescence sera créée lors de la phase 1 (MVP).

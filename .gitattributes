@@ -1,0 +1,14 @@
+/tests            export-ignore
+/e2e              export-ignore
+/js/src           export-ignore
+/js/node_modules  export-ignore
+/js/package.json  export-ignore
+/js/tsconfig.json export-ignore
+/js/webpack.config.js export-ignore
+/.github          export-ignore
+/.omc             export-ignore
+.gitignore        export-ignore
+.gitattributes    export-ignore
+.gitkeep          export-ignore
+phpunit.xml       export-ignore
+CHANGELOG.md      export-ignore

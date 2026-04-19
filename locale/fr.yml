@@ -1,0 +1,22 @@
+mi-agenda-timeline:
+  forum:
+    agenda:
+      nav_item: Agenda
+      post_event_button: Poster un événement
+    composer:
+      brand_label: Nouvel événement
+      title_label: Titre de l'événement
+      title_placeholder: Titre du concert (ex: Mopcut au Périscope)
+      description_label: Description / Infos détaillées
+      submit_label: Publier le concert
+      date_label: Date du concert
+      ville_label: Ville
+      ville_placeholder: ex: Lyon
+      lieu_label: Lieu
+      lieu_placeholder: ex: Le Périscope
+      description_placeholder: Racontez-nous tout sur cet événement...
+      personne_label: Artiste / Personne
+      personne_placeholder: ex: Mopcut
+      error_missing_date: Veuillez sélectionner une date pour cet événement.
+      error_missing_title: Veuillez saisir un titre pour cet événement.
+      error_submit: Impossible de publier l'événement. Veuillez réessayer.

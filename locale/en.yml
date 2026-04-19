@@ -1,0 +1,22 @@
+mi-agenda-timeline:
+  forum:
+    agenda:
+      nav_item: Agenda
+      post_event_button: Post an Event
+    composer:
+      brand_label: New Event
+      title_label: Event Title
+      title_placeholder: Event Title (e.g. Mopcut at Le Périscope)
+      description_label: Description / Detailed Info
+      submit_label: Post Event
+      date_label: Event Date
+      ville_label: City
+      ville_placeholder: e.g. Paris
+      lieu_label: Venue
+      lieu_placeholder: e.g. MJC de Bolbec
+      description_placeholder: Tell us all about this event...
+      personne_label: Artist / Person
+      personne_placeholder: e.g. Mopcut
+      error_missing_date: Please select a date for this event.
+      error_missing_title: Please enter a title for this event.
+      error_submit: Failed to save event. Please try again.
