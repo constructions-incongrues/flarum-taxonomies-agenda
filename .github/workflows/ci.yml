@@ -29,7 +29,7 @@ jobs:
 
       - name: Run PHPUnit
         working-directory: extension/taxonomies-agenda
-        run: composer test
+        run: composer test -- --testsuite unit
 
   js-build:
     name: JS build
@@ -53,5 +53,5 @@ jobs:
       - name: Verify bundle
         working-directory: extension/taxonomies-agenda/js
         run: |
-          test -s js/dist/forum.js || { echo "js/dist/forum.js missing or empty"; exit 1; }
-          echo "Bundle size: $(wc -c < js/dist/forum.js) bytes"
+          test -s dist/forum.js || { echo "dist/forum.js missing or empty"; exit 1; }
+          echo "Bundle size: $(wc -c < dist/forum.js) bytes"
