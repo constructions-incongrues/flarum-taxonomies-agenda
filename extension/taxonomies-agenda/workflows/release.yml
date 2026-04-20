@@ -13,6 +13,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   validate-release:
     name: Validate release
@@ -45,11 +48,13 @@ jobs:
           echo "✓ Release version: ${VERSION}"
 
       - name: Validate composer.json
+        working-directory: extension/taxonomies-agenda
         run: |
           composer validate --strict
           echo "✓ composer.json is valid"
 
       - name: Validate CHANGELOG entry
+        working-directory: extension/taxonomies-agenda
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           if grep -q "^\## \[${VERSION}\]" CHANGELOG.md; then
@@ -71,24 +76,34 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'js/package-lock.json'
+
+      - name: Get npm cache directory
+        id: npm-cache
+        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.npm-cache.outputs.dir }}
+          key: ${{ runner.os }}-npm-${{ hashFiles('extension/taxonomies-agenda/js/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
 
       - name: Install JS dependencies
-        working-directory: js
+        working-directory: extension/taxonomies-agenda/js
         run: npm ci --audit=false --fund=false
 
       - name: Build bundle
-        working-directory: js
+        working-directory: extension/taxonomies-agenda/js
         run: npm run build
 
       - name: Commit built bundle if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet js/dist/forum.js js/dist/admin.js; then
+          if ! git diff --quiet extension/taxonomies-agenda/js/dist/forum.js extension/taxonomies-agenda/js/dist/admin.js; then
             TAG="${{ needs.validate-release.outputs.tag }}"
-            git add js/dist/*.js
+            git add extension/taxonomies-agenda/js/dist/*.js
             git commit -m "chore(release): build bundles for ${TAG} [skip ci]" || true
             git tag -f "${TAG}"
             git push origin HEAD:main
@@ -110,6 +125,7 @@ jobs:
 
       - name: Extract release notes
         id: notes
+        working-directory: extension/taxonomies-agenda
         run: |
           VERSION="${{ needs.validate-release.outputs.version }}"
           awk -v v="[${VERSION}]" '
@@ -125,6 +141,7 @@ jobs:
           cat RELEASE_NOTES.md
 
       - name: Create GitHub Release
+        working-directory: extension/taxonomies-agenda
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -145,6 +162,7 @@ jobs:
           ref: ${{ needs.validate-release.outputs.tag }}
 
       - name: Validate package metadata
+        working-directory: extension/taxonomies-agenda
         run: |
           composer validate --strict
           echo "✓ Package metadata validated"
@@ -168,6 +186,7 @@ jobs:
       - name: Optional: Trigger webhook (requires PACKAGIST_WEBHOOK_TOKEN)
         if: vars.PACKAGIST_WEBHOOK_URL != ''
         continue-on-error: true
+        working-directory: extension/taxonomies-agenda
         run: |
           REPO="$(jq -r .name composer.json)"
           WEBHOOK_URL="${{ vars.PACKAGIST_WEBHOOK_URL }}"
@@ -188,6 +207,7 @@ jobs:
           ref: ${{ needs.validate-release.outputs.tag }}
 
       - name: Print release summary
+        working-directory: extension/taxonomies-agenda
         run: |
           echo "📦 Release Summary"
           echo "=================="

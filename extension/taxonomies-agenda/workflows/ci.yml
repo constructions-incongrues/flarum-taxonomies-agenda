@@ -11,6 +11,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   composer-validate:
     name: Validate composer.json
@@ -118,36 +121,37 @@ jobs:
         working-directory: extension/taxonomies-agenda/js
         run: |
           echo "Building with webpack..."
-          npm run build 2>&1
-          if [ $? -ne 0 ]; then
-            echo "ERROR: Webpack build failed"
-            exit 1
-          fi
+          npm run build
           echo "✓ Webpack build completed"
 
-      - name: List dist artifacts
-        working-directory: extension/taxonomies-agenda/js
+      - name: Verify bundle artifacts
+        working-directory: extension/taxonomies-agenda/js/dist
         run: |
-          if [ -d dist ]; then
-            echo "✓ dist/ directory exists"
-            ls -lh dist/
-          else
-            echo "ERROR: dist/ directory not created"
+          echo "=== Checking dist artifacts ==="
+          pwd
+          ls -lah
+          
+          # Check forum.js
+          if [ ! -f "forum.js" ]; then
+            echo "❌ ERROR: dist/forum.js is missing!"
             exit 1
           fi
-
-      - name: Verify bundle artifacts
-        working-directory: extension/taxonomies-agenda/js
-        run: |
-          for file in forum.js admin.js; do
-            if [ ! -f "dist/${file}" ]; then
-              echo "ERROR: dist/${file} is missing"
-              exit 1
-            fi
-            size=$(stat -f%z "dist/${file}" 2>/dev/null || stat -c%s "dist/${file}" 2>/dev/null)
-            if [ "$size" -eq 0 ]; then
-              echo "ERROR: dist/${file} is empty (0 bytes)"
-              exit 1
-            fi
-            echo "✓ dist/${file}: $(numfmt --to=iec-i --suffix=B $size 2>/dev/null || echo "${size} bytes")"
-          done
+          
+          if [ ! -s "forum.js" ]; then
+            echo "❌ ERROR: dist/forum.js is empty!"
+            exit 1
+          fi
+          
+          # Check admin.js
+          if [ ! -f "admin.js" ]; then
+            echo "❌ ERROR: dist/admin.js is missing!"
+            exit 1
+          fi
+          
+          if [ ! -s "admin.js" ]; then
+            echo "❌ ERROR: dist/admin.js is empty!"
+            exit 1
+          fi
+          
+          echo "✅ dist/forum.js: exists and has content"
+          echo "✅ dist/admin.js: exists and has content"
