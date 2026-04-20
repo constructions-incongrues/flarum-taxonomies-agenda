@@ -1,0 +1,11 @@
+vendor/
+composer.lock
+js/node_modules/
+js/dist/*.map
+.phpunit.result.cache
+.phpunit.cache/
+e2e/test-results/
+e2e/playwright-report/
+node_modules/
+.DS_Store
+.omc

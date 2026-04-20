@@ -1,0 +1,37 @@
+taxonomies-agenda:
+  forum:
+    agenda:
+      nav_item: Agenda
+      post_event_button: Poster un événement
+      ical_subscribe: S'abonner au calendrier (iCal)
+    composer:
+      brand_label: Nouvel événement
+      title_label: Titre de l'événement
+      title_placeholder: Titre du concert (ex: Mopcut au Périscope)
+      description_label: Description / Infos détaillées
+      submit_label: Publier le concert
+      date_label: Date du concert
+      ville_label: Ville
+      ville_placeholder: ex: Lyon
+      lieu_label: Lieu
+      lieu_placeholder: ex: Le Périscope
+      description_placeholder: Racontez-nous tout sur cet événement...
+      personne_label: Artiste / Personne
+      personne_placeholder: ex: Mopcut
+      error_missing_date: Veuillez sélectionner une date pour cet événement.
+      error_missing_title: Veuillez saisir un titre pour cet événement.
+      error_submit: Impossible de publier l'événement. Veuillez réessayer.
+      edit_brand_label: "Modifier l'événement"
+      edit_submit: Enregistrer les modifications
+    modal:
+      discuss_button: Rejoindre la discussion
+    card:
+      edit_button: Modifier
+      delete_button: Supprimer
+      delete_confirm: "Êtes-vous sûr de vouloir supprimer cet événement ?"
+      delete_error: Impossible de supprimer l'événement.
+      add_to_calendar: Ajouter à mon agenda
+      google_calendar: Google Calendar
+      outlook_calendar: Outlook.com
+      office365_calendar: Office 365
+      ical_download: Apple Calendar / iCal

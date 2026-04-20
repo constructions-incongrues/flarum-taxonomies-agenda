@@ -1,0 +1,37 @@
+taxonomies-agenda:
+  forum:
+    agenda:
+      nav_item: Agenda
+      post_event_button: Post an Event
+      ical_subscribe: Subscribe to calendar (iCal)
+    composer:
+      brand_label: New Event
+      title_label: Event Title
+      title_placeholder: Event Title (e.g. Mopcut at Le Périscope)
+      description_label: Description / Detailed Info
+      submit_label: Post Event
+      date_label: Event Date
+      ville_label: City
+      ville_placeholder: e.g. Paris
+      lieu_label: Venue
+      lieu_placeholder: e.g. MJC de Bolbec
+      description_placeholder: Tell us all about this event...
+      personne_label: Artist / Person
+      personne_placeholder: e.g. Mopcut
+      error_missing_date: Please select a date for this event.
+      error_missing_title: Please enter a title for this event.
+      error_submit: Failed to save event. Please try again.
+      edit_brand_label: Edit Event
+      edit_submit: Save Changes
+    modal:
+      discuss_button: Join the discussion
+    card:
+      edit_button: Edit
+      delete_button: Delete
+      delete_confirm: Are you sure you want to delete this event?
+      delete_error: Failed to delete event.
+      add_to_calendar: Add to my calendar
+      google_calendar: Google Calendar
+      outlook_calendar: Outlook.com
+      office365_calendar: Office 365
+      ical_download: Apple Calendar / iCal

@@ -1,0 +1,5 @@
+# Ce dossier reçoit les dumps .sql ou .sql.gz à importer automatiquement au premier démarrage de MariaDB.
+# Dépose y un dump anonymisé de la prod pour développer sur des données réalistes.
+# Tous les fichiers .sql, .sql.gz, .sh présents ici sont exécutés par l'entrypoint MariaDB
+# DANS L'ORDRE ALPHABÉTIQUE, une seule fois (à la création du volume db_data).
+# Pour relancer l'import : docker compose down -v && docker compose up -d

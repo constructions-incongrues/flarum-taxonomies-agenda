@@ -1,0 +1,56 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: mi-agenda-db
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MARIADB_DATABASE: ${DB_NAME:-flarum}
+      MARIADB_USER: ${DB_USER:-flarum}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-flarum}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DB_PORT:-3307}:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  flarum:
+    build:
+      context: ./flarum
+      dockerfile: Dockerfile
+    container_name: mi-agenda-flarum
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FLARUM_DB_HOST: db
+      FLARUM_DB_DATABASE: ${DB_NAME:-flarum}
+      FLARUM_DB_USER: ${DB_USER:-flarum}
+      FLARUM_DB_PASSWORD: ${DB_PASSWORD:-flarum}
+      FLARUM_URL: ${FLARUM_URL:-http://localhost:8888}
+      FLARUM_ADMIN_USER: ${FLARUM_ADMIN_USER:-admin}
+      FLARUM_ADMIN_PASSWORD: ${FLARUM_ADMIN_PASSWORD:-admin1234}
+      FLARUM_ADMIN_EMAIL: ${FLARUM_ADMIN_EMAIL:-admin@example.com}
+      FLARUM_TITLE: ${FLARUM_TITLE:-Musiques Incongrues (dev)}
+      # Utilisé uniquement par reset.sh pour drop+recreate la DB.
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    ports:
+      - "${FLARUM_PORT:-8888}:80"
+    volumes:
+      # Code Flarum persistant entre rebuilds (évite de recréer le projet à chaque démarrage)
+      - flarum_app:/app
+      # Monte l'extension en développement — les modifications dans ./extension/taxonomies-agenda/
+      # sont immédiatement visibles dans le container.
+      - ./extension/taxonomies-agenda:/srv/extensions/taxonomies-agenda
+      # Scripts admin (install flamarkt, rebuild JS, etc.) accessibles via docker exec
+      - ./flarum/scripts:/srv/scripts:ro
+
+volumes:
+  db_data:
+  flarum_app:

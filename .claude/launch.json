@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Flarum (Docker)",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["compose", "up", "--build", "-d"],
+      "port": 8888,
+      "autoPort": true
+    },
+    {
+      "name": "Webpack dev watch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "extension/taxonomies-agenda/js",
+      "port": null
+    }
+  ]
+}

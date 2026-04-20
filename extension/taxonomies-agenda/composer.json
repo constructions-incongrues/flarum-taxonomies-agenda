@@ -1,0 +1,41 @@
+{
+    "name": "constructions-incongrues/taxonomies-agenda",
+    "description": "Timeline chronologique des concerts pour musiques-incongrues.net, basée sur flamarkt/taxonomies.",
+    "type": "flarum-extension",
+    "license": "MIT",
+    "require": {
+        "flarum/core": "^1.8",
+        "flamarkt/taxonomies": "^0.1.9",
+        "flamarkt/backoffice": "^0.1.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0",
+        "flarum/testing": "^1.0",
+        "flarum/tags": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mi\\AgendaTimeline\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Mi\\AgendaTimeline\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.1.x-dev"
+        },
+        "flarum-extension": {
+            "title": "Taxonomies Agenda",
+            "category": "feature",
+            "icon": {
+                "name": "fas fa-calendar-alt"
+            }
+        }
+    }
+}
