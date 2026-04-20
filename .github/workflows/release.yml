@@ -50,11 +50,13 @@ jobs:
         id: notes
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          awk -v v="[${VERSION}]" '
-            $0 ~ "^## "v { capture=1; next }
-            capture && /^## \[/ { exit }
-            capture { print }
-          ' CHANGELOG.md > RELEASE_NOTES.md
+          if [ -f CHANGELOG.md ]; then
+            awk -v v="[${VERSION}]" '
+              $0 ~ "^## "v { capture=1; next }
+              capture && /^## \[/ { exit }
+              capture { print }
+            ' CHANGELOG.md > RELEASE_NOTES.md
+          fi
           if [ ! -s RELEASE_NOTES.md ]; then
             echo "Release ${GITHUB_REF_NAME}" > RELEASE_NOTES.md
           fi
