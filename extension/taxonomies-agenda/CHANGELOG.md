@@ -4,6 +4,12 @@ Toutes les modifications notables sont documentées ici. Ce projet suit [Keep a 
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-04-20
+
+### Corrigé
+- Workflow release : sécurise l'extraction des notes de release quand
+  `CHANGELOG.md` est absent.
+
 ## [0.1.0] - 2026-04-19
 
 ### Ajouté
@@ -20,5 +26,6 @@ Toutes les modifications notables sont documentées ici. Ce projet suit [Keep a 
 - Suite de tests unitaires PHPUnit 10 (`tests/unit/EventTaxonomyValidatorTest.php`)
 - Scénarios E2E Playwright (`e2e/tests/agenda.spec.ts`)
 
-[Unreleased]: https://github.com/constructions-incongrues/taxonomies-agenda/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/constructions-incongrues/taxonomies-agenda/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/constructions-incongrues/taxonomies-agenda/releases/tag/v0.2.3
 [0.1.0]: https://github.com/constructions-incongrues/taxonomies-agenda/releases/tag/v0.1.0
