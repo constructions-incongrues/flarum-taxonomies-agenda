@@ -68,9 +68,10 @@ jobs:
 
       - name: Run PHPUnit tests
         working-directory: extension/taxonomies-agenda
-        run: composer test -- --coverage-clover=coverage.xml
+        run: ./vendor/bin/phpunit --testsuite unit --coverage-clover=coverage.xml
 
       - name: Upload coverage reports
+        if: success()
         uses: codecov/codecov-action@v3
         with:
           files: extension/taxonomies-agenda/coverage.xml
