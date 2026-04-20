@@ -1,0 +1,68 @@
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install JS dependencies
+        working-directory: extension/taxonomies-agenda/js
+        run: npm install --no-audit --no-fund
+
+      - name: Build bundle
+        working-directory: extension/taxonomies-agenda/js
+        run: npm run build
+
+      - name: Commit built bundle if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet extension/taxonomies-agenda/js/dist/forum.js; then
+            TAG="${GITHUB_REF_NAME}"
+            git add extension/taxonomies-agenda/js/dist/forum.js
+            git commit -m "chore(release): build bundle for ${TAG} [skip ci]"
+            git tag -f "${TAG}"
+            git push origin HEAD:main
+            git push origin -f "${TAG}"
+          else
+            echo "extension/taxonomies-agenda/js/dist/forum.js already up to date"
+          fi
+
+      - name: Extract release notes
+        id: notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v v="[${VERSION}]" '
+            $0 ~ "^## "v { capture=1; next }
+            capture && /^## \[/ { exit }
+            capture { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "Release ${GITHUB_REF_NAME}" > RELEASE_NOTES.md
+          fi
+          cat RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file RELEASE_NOTES.md
