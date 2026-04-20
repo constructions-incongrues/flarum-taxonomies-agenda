@@ -103,8 +103,9 @@ jobs:
         run: npm run build
 
       - name: Verify bundle artifacts
+        working-directory: extension/taxonomies-agenda
         run: |
-          test -s extension/taxonomies-agenda/js/dist/forum.js || { echo "ERROR: extension/taxonomies-agenda/js/dist/forum.js missing or empty"; exit 1; }
-          test -s extension/taxonomies-agenda/js/dist/admin.js || { echo "ERROR: extension/taxonomies-agenda/js/dist/admin.js missing or empty"; exit 1; }
-          echo "✓ Forum bundle: $(du -h extension/taxonomies-agenda/js/dist/forum.js | cut -f1)"
-          echo "✓ Admin bundle: $(du -h extension/taxonomies-agenda/js/dist/admin.js | cut -f1)"
+          test -s js/dist/forum.js || { echo "ERROR: js/dist/forum.js missing or empty"; exit 1; }
+          test -s js/dist/admin.js || { echo "ERROR: js/dist/admin.js missing or empty"; exit 1; }
+          echo "✓ Forum bundle: $(du -h js/dist/forum.js | cut -f1)"
+          echo "✓ Admin bundle: $(du -h js/dist/admin.js | cut -f1)"
