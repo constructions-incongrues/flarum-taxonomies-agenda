@@ -84,12 +84,31 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: 'extension/taxonomies-agenda/js/package-lock.json'
+
+      - name: Get npm cache directory
+        id: npm-cache
+        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.npm-cache.outputs.dir }}
+          key: ${{ runner.os }}-npm-${{ hashFiles('extension/taxonomies-agenda/js/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
 
       - name: Install JS dependencies
         working-directory: extension/taxonomies-agenda/js
         run: npm ci --audit=false --fund=false
+
+      - name: Verify source files exist
+        working-directory: extension/taxonomies-agenda/js
+        run: |
+          test -f forum.js || { echo "ERROR: forum.js missing"; exit 1; }
+          test -f admin.js || { echo "ERROR: admin.js missing"; exit 1; }
+          test -d src/forum || { echo "ERROR: src/forum missing"; exit 1; }
+          test -d src/admin || { echo "ERROR: src/admin missing"; exit 1; }
+          echo "✓ Entry points and sources exist"
 
       - name: Lint JavaScript
         working-directory: extension/taxonomies-agenda/js
@@ -97,12 +116,38 @@ jobs:
 
       - name: Build bundle
         working-directory: extension/taxonomies-agenda/js
-        run: npm run build
+        run: |
+          echo "Building with webpack..."
+          npm run build 2>&1
+          if [ $? -ne 0 ]; then
+            echo "ERROR: Webpack build failed"
+            exit 1
+          fi
+          echo "✓ Webpack build completed"
+
+      - name: List dist artifacts
+        working-directory: extension/taxonomies-agenda/js
+        run: |
+          if [ -d dist ]; then
+            echo "✓ dist/ directory exists"
+            ls -lh dist/
+          else
+            echo "ERROR: dist/ directory not created"
+            exit 1
+          fi
 
       - name: Verify bundle artifacts
-        working-directory: extension/taxonomies-agenda
+        working-directory: extension/taxonomies-agenda/js
         run: |
-          test -s js/dist/forum.js || { echo "ERROR: js/dist/forum.js missing or empty"; exit 1; }
-          test -s js/dist/admin.js || { echo "ERROR: js/dist/admin.js missing or empty"; exit 1; }
-          echo "✓ Forum bundle: $(du -h js/dist/forum.js | cut -f1)"
-          echo "✓ Admin bundle: $(du -h js/dist/admin.js | cut -f1)"
+          for file in forum.js admin.js; do
+            if [ ! -f "dist/${file}" ]; then
+              echo "ERROR: dist/${file} is missing"
+              exit 1
+            fi
+            size=$(stat -f%z "dist/${file}" 2>/dev/null || stat -c%s "dist/${file}" 2>/dev/null)
+            if [ "$size" -eq 0 ]; then
+              echo "ERROR: dist/${file} is empty (0 bytes)"
+              exit 1
+            fi
+            echo "✓ dist/${file}: $(numfmt --to=iec-i --suffix=B $size 2>/dev/null || echo "${size} bytes")"
+          done
