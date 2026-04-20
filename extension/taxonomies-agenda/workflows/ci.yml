@@ -123,6 +123,11 @@ jobs:
           echo "Building with webpack..."
           npm run build
           echo "✓ Webpack build completed"
+          
+          # Debug: Show dist directory contents
+          echo ""
+          echo "=== Debug: dist directory after build ==="
+          ls -lah dist/ || echo "dist directory not found!"
 
       - name: Verify bundle artifacts
         working-directory: extension/taxonomies-agenda/js/dist
