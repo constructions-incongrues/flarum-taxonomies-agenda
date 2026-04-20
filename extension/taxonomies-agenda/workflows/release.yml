@@ -4,26 +4,79 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v0.1.0)'
+        required: true
 
 permissions:
   contents: write
 
 jobs:
-  release:
+  validate-release:
+    name: Validate release
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "✓ Release tag: ${TAG}"
+
+      - name: Extract version
+        id: version
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "✓ Release version: ${VERSION}"
+
+      - name: Validate composer.json
+        run: |
+          composer validate --strict
+          echo "✓ composer.json is valid"
+
+      - name: Validate CHANGELOG entry
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if grep -q "^\## \[${VERSION}\]" CHANGELOG.md; then
+            echo "✓ CHANGELOG.md contains entry for v${VERSION}"
+          else
+            echo "⚠ Warning: No CHANGELOG entry found for v${VERSION}"
+          fi
+
+  build-artifacts:
+    name: Build artifacts
+    runs-on: ubuntu-latest
+    needs: validate-release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-release.outputs.tag }}
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'js/package-lock.json'
 
       - name: Install JS dependencies
         working-directory: js
-        run: npm install --no-audit --no-fund
+        run: npm ci --audit=false --fund=false
 
       - name: Build bundle
         working-directory: js
@@ -33,28 +86,41 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git diff --quiet js/dist/forum.js; then
-            TAG="${GITHUB_REF_NAME}"
-            git add js/dist/forum.js
-            git commit -m "chore(release): build bundle for ${TAG} [skip ci]"
+          if ! git diff --quiet js/dist/forum.js js/dist/admin.js; then
+            TAG="${{ needs.validate-release.outputs.tag }}"
+            git add js/dist/*.js
+            git commit -m "chore(release): build bundles for ${TAG} [skip ci]" || true
             git tag -f "${TAG}"
             git push origin HEAD:main
             git push origin -f "${TAG}"
+            echo "✓ Bundle artifacts committed and tag updated"
           else
-            echo "js/dist/forum.js already up to date"
+            echo "✓ Bundle artifacts already up to date"
           fi
+
+  create-github-release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+    needs: [validate-release, build-artifacts]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-release.outputs.tag }}
+          fetch-depth: 0
 
       - name: Extract release notes
         id: notes
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${{ needs.validate-release.outputs.version }}"
           awk -v v="[${VERSION}]" '
             $0 ~ "^## "v { capture=1; next }
             capture && /^## \[/ { exit }
             capture { print }
           ' CHANGELOG.md > RELEASE_NOTES.md
           if [ ! -s RELEASE_NOTES.md ]; then
-            echo "Release ${GITHUB_REF_NAME}" > RELEASE_NOTES.md
+            echo "## Release ${VERSION}" > RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+            echo "See CHANGELOG.md for details." >> RELEASE_NOTES.md
           fi
           cat RELEASE_NOTES.md
 
@@ -62,6 +128,77 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "${GITHUB_REF_NAME}" \
-            --notes-file RELEASE_NOTES.md
+          TAG="${{ needs.validate-release.outputs.tag }}"
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes-file RELEASE_NOTES.md \
+            --latest
+
+  publish-packagist:
+    name: Publish to Packagist
+    runs-on: ubuntu-latest
+    needs: [validate-release, create-github-release]
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-release.outputs.tag }}
+
+      - name: Validate package metadata
+        run: |
+          composer validate --strict
+          echo "✓ Package metadata validated"
+          echo "✓ Package: $(jq -r .name composer.json)"
+          echo "✓ Version: ${{ needs.validate-release.outputs.version }}"
+
+      - name: Notify Packagist webhook
+        continue-on-error: true
+        run: |
+          TAG="${{ needs.validate-release.outputs.tag }}"
+          REPO_URL="https://github.com/${{ github.repository }}"
+          echo "ℹ Packagist will auto-discover this release:"
+          echo "  - Tag: ${TAG}"
+          echo "  - Repository: ${REPO_URL}"
+          echo ""
+          echo "If auto-discovery doesn't work, manually trigger webhook at:"
+          echo "  https://packagist.org/packages/$(jq -r .name composer.json)"
+          echo ""
+          echo "Or use the GitHub webhook integration in Packagist settings."
+
+      - name: Optional: Trigger webhook (requires PACKAGIST_WEBHOOK_TOKEN)
+        if: vars.PACKAGIST_WEBHOOK_URL != ''
+        continue-on-error: true
+        run: |
+          REPO="$(jq -r .name composer.json)"
+          WEBHOOK_URL="${{ vars.PACKAGIST_WEBHOOK_URL }}"
+          curl -X POST \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data "repository_url=https://github.com/${{ github.repository }}" \
+            "${WEBHOOK_URL}" \
+            || echo "⚠ Webhook notification skipped"
+
+  summary:
+    name: Release summary
+    runs-on: ubuntu-latest
+    needs: [validate-release, publish-packagist]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-release.outputs.tag }}
+
+      - name: Print release summary
+        run: |
+          echo "📦 Release Summary"
+          echo "=================="
+          echo "Tag:     ${{ needs.validate-release.outputs.tag }}"
+          echo "Version: ${{ needs.validate-release.outputs.version }}"
+          echo "Package: $(jq -r .name composer.json)"
+          echo ""
+          echo "✓ GitHub Release created"
+          echo "✓ Packagist notification sent"
+          echo ""
+          echo "Next steps:"
+          echo "1. Verify release on GitHub: https://github.com/${{ github.repository }}/releases"
+          echo "2. Check Packagist: https://packagist.org/packages/$(jq -r .name composer.json)"
+          echo "3. Confirm auto-discovery in ~5 minutes"

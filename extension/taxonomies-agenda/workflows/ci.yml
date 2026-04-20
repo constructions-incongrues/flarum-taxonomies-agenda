@@ -5,12 +5,34 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  php-tests:
-    name: PHP ${{ matrix.php }}
+  composer-validate:
+    name: Validate composer.json
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+  php-tests:
+    name: PHP ${{ matrix.php }} - Tests
+    runs-on: ubuntu-latest
+    needs: composer-validate
     strategy:
+      fail-fast: false
       matrix:
         php: ['8.1', '8.2', '8.3']
     steps:
@@ -20,17 +42,36 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          coverage: none
+          coverage: pcov
           tools: composer:v2
+          extensions: dom, curl, libxml, mbstring, zip, pdo, mysql, sqlite, pgsql, bcmath, soap, intl, gd, exif, iconv, imagick
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer packages
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: Run PHPUnit
-        run: composer test
+      - name: Run PHPUnit tests
+        run: composer test -- --coverage-clover=coverage.xml
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: php-${{ matrix.php }}
+          fail_ci_if_error: false
 
   js-build:
-    name: JS build
+    name: JS build & tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,16 +80,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'js/package-lock.json'
 
       - name: Install JS dependencies
         working-directory: js
-        run: npm install --no-audit --no-fund
+        run: npm ci --audit=false --fund=false
+
+      - name: Lint JavaScript
+        working-directory: js
+        run: npm run lint --if-present || true
 
       - name: Build bundle
         working-directory: js
         run: npm run build
 
-      - name: Verify bundle
+      - name: Verify bundle artifacts
         run: |
-          test -s js/dist/forum.js || { echo "js/dist/forum.js missing or empty"; exit 1; }
-          echo "Bundle size: $(wc -c < js/dist/forum.js) bytes"
+          test -s js/dist/forum.js || { echo "ERROR: js/dist/forum.js missing or empty"; exit 1; }
+          test -s js/dist/admin.js || { echo "ERROR: js/dist/admin.js missing or empty"; exit 1; }
+          echo "✓ Forum bundle: $(du -h js/dist/forum.js | cut -f1)"
+          echo "✓ Admin bundle: $(du -h js/dist/admin.js | cut -f1)"

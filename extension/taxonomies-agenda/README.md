@@ -11,10 +11,18 @@ Chaque discussion taguée `agenda` devient un événement daté (jour/mois/anné
 ## Installation
 
 ```bash
+```bash
+# Installation normale depuis GitHub
 composer config repositories.taxonomies-agenda vcs https://github.com/constructions-incongrues/taxonomies-agenda
 composer require constructions-incongrues/taxonomies-agenda:dev-main
-php flarum migrate
-php flarum cache:clear
+
+# Si le package se trouve dans un sous-répertoire local,
+# utilisez un dépôt de type path sur ce sous-dossier
+composer config repositories.taxonomies-agenda path ../constructions-incongrues/taxonomies-agenda/extension/taxonomies-agenda
+composer require constructions-incongrues/taxonomies-agenda:dev-main
+```
+
+Note : Composer ne supporte pas directement un sous-répertoire distant dans un repo VCS. Pour du développement local, utilisez `path`.
 ```
 
 Pour une version stable (après première release) :
